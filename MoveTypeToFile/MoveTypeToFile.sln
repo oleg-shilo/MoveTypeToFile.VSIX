@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26206.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoveTypeToFile", "MoveTypeToFile.csproj", "{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestPad", "..\TestPad\TestPad.csproj", "{B718D9B1-3EBC-40C2-931A-7B450438C72B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B718D9B1-3EBC-40C2-931A-7B450438C72B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B718D9B1-3EBC-40C2-931A-7B450438C72B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B718D9B1-3EBC-40C2-931A-7B450438C72B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B718D9B1-3EBC-40C2-931A-7B450438C72B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
