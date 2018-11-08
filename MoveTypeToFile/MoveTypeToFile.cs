@@ -106,7 +106,7 @@ using System.Collections.Generic;");
             string file = dte.ActiveDocument.FullName;
             var declarations = Parser.FindTypeDeclarations(code);
 
-            //remove properly named and nested classes 
+            //remove properly named and nested classes
 
             var rootTypes = declarations//.Where(x => !declarations.Any(y => y.StartLine < x.StartLine && y.EndLine > x.EndLine))
                                         .Where(x => string.Compare(x.TypeName, System.IO.Path.GetFileNameWithoutExtension(file), true) != 0)
@@ -180,6 +180,7 @@ using System.Collections.Generic;");
             string header = GetUserDefinedHeader();
 
             caretLineNumber = caretLineNumber + 1; //parser is 1-based
+            // Parser.Result result = Parser.FindTypeDeclarationNRefactory(code, caretLineNumber, header);
             Parser.Result result = Parser.FindTypeDeclaration(code, caretLineNumber, header);
 
             if (!result.Success)
@@ -276,7 +277,7 @@ using System.Collections.Generic;");
                     edit.Delete(currentLine.Start.Position, currentLine.LengthIncludingLineBreak);
                 }
 
-                //remove separating empty line if found 
+                //remove separating empty line if found
                 if (snapshot.LineCount > result.EndLine)
                 {
                     currentLine = snapshot.GetLineFromLineNumber(result.EndLine);

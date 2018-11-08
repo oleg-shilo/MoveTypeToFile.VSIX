@@ -1,8 +1,10 @@
 using ICSharpCode.NRefactory.CSharp;
+using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace OlegShilo.MoveTypeToFile
 {
@@ -162,7 +164,75 @@ namespace OlegShilo.MoveTypeToFile
             return result;
         }
 
+        static int StartLineIncludingComments(this TypeDeclarationSyntax declaration)
+        {
+            var startLine = declaration.GetLocation().GetLineSpan().StartLinePosition.Line;
+            var endLine = declaration.GetLocation().GetLineSpan().EndLinePosition.Line;
+            var typeWithoutComments = declaration.ToString();
+            var typeWithComments = declaration.GetText().ToString();
+
+            var commentsLinesCount = typeWithComments.Substring(0, typeWithComments.IndexOf(typeWithoutComments)).Split('\n').Count()-1;
+            // var commentsCount = typeWithComments.Split('\n').Count() - (endLine - startLine);
+            // int commentsLinesCount = declaration.GetText().Lines.Count - (endLine - startLine);
+
+            return startLine - commentsLinesCount + 1; // 1-based
+        }
+        static string Namespace(this TypeDeclarationSyntax declaration)
+        {
+            string name = null;
+
+            var node = declaration.Parent;
+            do
+            {
+                if (node is NamespaceDeclarationSyntax nm)
+                    if(name == null)
+                        name = nm.Name.ToFullString().Trim();
+                    else
+                        name = nm.Name.ToFullString().Trim()+"."+ name;
+
+                node = node?.Parent;
+            }
+            while (node != null);
+            return name;
+        }
+
         public static Result FindTypeDeclaration(string code, int fromLine, string userDefinedHeader = "")
+        {
+            var tree = CSharpSyntaxTree.ParseText(code);
+            var fromLineSpan = tree.GetText().Lines[fromLine].Span;
+            var root = tree.GetRoot();
+            var nodes = root.DescendantNodes();
+
+            var usings = nodes.OfType<UsingDirectiveSyntax>()
+                              .Select(x => x.GetText().ToString().Trim())
+                              .ToArray();
+
+            var result = nodes.OfType<TypeDeclarationSyntax>()
+                             .Where(t => t.Span.IntersectsWith(fromLineSpan)) //inside of the type declaration
+                             .Select(x => new Result
+                                           {
+                                               Namespace = x.Namespace(),
+                                               ParentTypes = null,//"x.Type.GetParentTypes()",
+                                               TypeDefinition = x.GetText().ToString(),
+                                               TypeName = x.Identifier.ValueText,
+                                               StartLine = x.StartLineIncludingComments(),
+                                               EndLine = x.GetLocation().GetLineSpan().EndLinePosition.Line+1,
+                                               Success = true
+                                           })
+                              .OrderBy(x => x.EndLine - x.StartLine)
+                              .FirstOrDefault() ?? new Result();
+
+            if (result.Success)
+            {
+                if(result.Namespace.HasText())
+                    result.TypeDefinition = "namespace "+result.Namespace+ "\r\n{\r\n" + result.TypeDefinition + "\r\n}";
+                if(usings.Any())
+                    result.TypeDefinition = string.Join("\r\n", usings)+ "\r\n\r\n"+ result.TypeDefinition;
+            }
+
+            return result;
+        }
+        public static Result FindTypeDeclarationNRefactory(string code, int fromLine, string userDefinedHeader = "")
         {
             var syntaxTree = new CSharpParser().Parse(code, "demo.cs");
 
