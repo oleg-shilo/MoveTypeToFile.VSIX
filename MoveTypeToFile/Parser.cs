@@ -4,7 +4,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using SyntaxTree = ICSharpCode.NRefactory.CSharp.SyntaxTree;
 
 namespace OlegShilo.MoveTypeToFile
 {
@@ -19,13 +21,30 @@ namespace OlegShilo.MoveTypeToFile
         public class Result
         {
             public bool Success { get; set; }
-            public string TypeDefinition { get; set; }
+            public string RawTypeDefinition { get; set; }
             public IEnumerable<TypeInfo> ParentTypes { get; set; }
             public int StartLine { get; set; }
             public int EndLine { get; set; }
+            public string[] Usings { get; set; }
+            public string CustomHeader{ get; set; }
             public string TypeName { get; set; }
             public string Namespace { get; set; }
             public bool Selected { get; set; }
+            public string TypeDefinition
+            {
+                get
+                {
+                    var result = RawTypeDefinition.Trim();
+                    if (Namespace.HasText())
+                        result = "namespace " + Namespace + "\r\n{\r\n" + result + "\r\n}";
+                    if (Usings?.Any() == true)
+                        result = string.Join("\r\n", Usings) + "\r\n\r\n" + result;
+                    if (CustomHeader?.Any() == true)
+                        result = string.Join("\r\n", CustomHeader) + "\r\n\r\n" + result;
+                    return result;
+
+                }
+            }
             public string DisplayName
             {
                 get
@@ -69,7 +88,7 @@ namespace OlegShilo.MoveTypeToFile
                     extraIndent = 1;
 
                 if (ParentTypes != null)
-                    for (int i = ParentTypes.Count()-1; i >= 0; i--)
+                    for (int i = ParentTypes.Count() - 1; i >= 0; i--)
                     {
                         var indent = new string(' ', (i + extraIndent) * 4);
                         result.AppendLine(indent + "}");
@@ -94,90 +113,25 @@ namespace OlegShilo.MoveTypeToFile
             return true;
         }
 
-
-        public static Result EnsureCommentsIncluded(this Result result, SyntaxTree syntaxTree, string code, string userDefinedHeader = "")
-        {
-            string[] userInjectedContent = userDefinedHeader.Split(Environment.NewLine.ToCharArray(), StringSplitOptions.RemoveEmptyEntries).Select(x => x.Trim()).ToArray();
-            string[] codeLines = code.GetLines();
-
-            //count all type (class) comments above the type declaration
-            var potentialComments = syntaxTree.Children.DeepAll(x => true)
-                                         .Where(t => t.StartLocation.Line < result.StartLine)
-                                         .Select(t => new { Type = t, StartLine = t.StartLocation.Line })
-                                         .OrderByDescending(t => t.StartLine)
-                                         .ToArray();
-
-            int lastCocommentLine = result.StartLine;
-            foreach (var item in potentialComments)
-                if (item.Type is Comment)
-                    lastCocommentLine = (item.Type as Comment).StartLocation.Line;
-                else
-                    break;
-
-            result.StartLine = lastCocommentLine;
-            result.Success = true;
-
-
-            bool isUsingsOutside = IsDefaultUsingsStyle(syntaxTree);
-
-            var extractedCode = new StringBuilder();
-            var usingsCode = new StringBuilder();
-
-            //Note: text lines are 1- based
-
-            foreach (AstNode item in syntaxTree.Children.DeepAll(x => x is UsingDeclaration))
-                for (int i = item.EndLocation.Line - 1; i <= item.EndLocation.Line - 1; i++)
-                    if (!userInjectedContent.Contains(codeLines[i].Trim()))
-                        usingsCode.AppendLine(codeLines[i]);
-
-            if (isUsingsOutside)
-            {
-                extractedCode.AppendLine(usingsCode.ToString());
-            }
-
-            if (result.Namespace.HasText())
-            {
-                extractedCode.AppendFormat("namespace {0}{1}{{{1}", result.Namespace, Environment.NewLine);
-            }
-
-            if (!isUsingsOutside)
-            {
-                extractedCode.AppendLine(usingsCode.ToString());
-            }
-
-            extractedCode.AppendLine(result.GetParenTypesOpeningCode());
-
-            for (int i = result.StartLine - 1; i <= result.EndLine - 1; i++)
-                extractedCode.AppendLine(codeLines[i]);
-
-            extractedCode.AppendLine(result.GetParenTypesClosingCode());
-
-            if (result.Namespace.HasText())
-                extractedCode.Append("}");
-
-
-            if (!string.IsNullOrEmpty(userDefinedHeader))
-                result.TypeDefinition = userDefinedHeader.Trim() + Environment.NewLine + extractedCode.ToString();
-            else
-                result.TypeDefinition = extractedCode.ToString();
-
-            return result;
-        }
-
-        static int StartLineIncludingComments(this TypeDeclarationSyntax declaration)
+        static int StartLineIncludingComments(this BaseTypeDeclarationSyntax declaration)
         {
             var startLine = declaration.GetLocation().GetLineSpan().StartLinePosition.Line;
-            var endLine = declaration.GetLocation().GetLineSpan().EndLinePosition.Line;
             var typeWithoutComments = declaration.ToString();
             var typeWithComments = declaration.GetText().ToString();
 
-            var commentsLinesCount = typeWithComments.Substring(0, typeWithComments.IndexOf(typeWithoutComments)).Split('\n').Count()-1;
-            // var commentsCount = typeWithComments.Split('\n').Count() - (endLine - startLine);
-            // int commentsLinesCount = declaration.GetText().Lines.Count - (endLine - startLine);
+            // -1 to exclude the current line
+            var commentsLinesCount = typeWithComments.Substring(0, typeWithComments.IndexOf(typeWithoutComments)).Split('\n').Count() - 1;
 
             return startLine - commentsLinesCount + 1; // 1-based
         }
-        static string Namespace(this TypeDeclarationSyntax declaration)
+        static string[] Usings(this IEnumerable<SyntaxNode> nodes)
+        {
+            return nodes
+                .OfType<UsingDirectiveSyntax>()
+                .Select(x => x.GetText().ToString().Trim())
+                .ToArray();
+        }
+        static string Namespace(this BaseTypeDeclarationSyntax declaration)
         {
             string name = null;
 
@@ -185,10 +139,30 @@ namespace OlegShilo.MoveTypeToFile
             do
             {
                 if (node is NamespaceDeclarationSyntax nm)
-                    if(name == null)
+                    if (name == null)
                         name = nm.Name.ToFullString().Trim();
                     else
-                        name = nm.Name.ToFullString().Trim()+"."+ name;
+                        name = nm.Name.ToFullString().Trim() + "." + name;
+
+                node = node?.Parent;
+            }
+            while (node != null);
+            return name;
+        }
+
+        static List<TypeInfo> ParentTypes(this BaseTypeDeclarationSyntax declaration)
+        {
+            var name = new List<TypeInfo>();
+
+            var node = declaration.Parent;
+            do
+            {
+                if (node is TypeDeclarationSyntax type)
+                    name.Add(new TypeInfo
+                    {
+                        Name = type.Identifier.ValueText,
+                        Modifiers = type.Modifiers.ToString()
+                    });
 
                 node = node?.Parent;
             }
@@ -203,35 +177,52 @@ namespace OlegShilo.MoveTypeToFile
             var root = tree.GetRoot();
             var nodes = root.DescendantNodes();
 
-            var usings = nodes.OfType<UsingDirectiveSyntax>()
-                              .Select(x => x.GetText().ToString().Trim())
-                              .ToArray();
-
-            var result = nodes.OfType<TypeDeclarationSyntax>()
-                             .Where(t => t.Span.IntersectsWith(fromLineSpan)) //inside of the type declaration
-                             .Select(x => new Result
-                                           {
-                                               Namespace = x.Namespace(),
-                                               ParentTypes = null,//"x.Type.GetParentTypes()",
-                                               TypeDefinition = x.GetText().ToString(),
-                                               TypeName = x.Identifier.ValueText,
-                                               StartLine = x.StartLineIncludingComments(),
-                                               EndLine = x.GetLocation().GetLineSpan().EndLinePosition.Line+1,
-                                               Success = true
-                                           })
-                              .OrderBy(x => x.EndLine - x.StartLine)
-                              .FirstOrDefault() ?? new Result();
-
-            if (result.Success)
-            {
-                if(result.Namespace.HasText())
-                    result.TypeDefinition = "namespace "+result.Namespace+ "\r\n{\r\n" + result.TypeDefinition + "\r\n}";
-                if(usings.Any())
-                    result.TypeDefinition = string.Join("\r\n", usings)+ "\r\n\r\n"+ result.TypeDefinition;
-            }
+            var result = nodes
+                .OfType<BaseTypeDeclarationSyntax>()
+                .Where(t => t.Span.IntersectsWith(fromLineSpan)) //inside of the type declaration
+                .Select(x => new Result
+                {
+                    Namespace = x.Namespace(),
+                    ParentTypes = x.ParentTypes(),
+                    RawTypeDefinition = x.GetText().ToString(),
+                    TypeName = x.Identifier.ValueText,
+                    Usings = nodes.Usings(),
+                    CustomHeader = userDefinedHeader,
+                    StartLine = x.StartLineIncludingComments(),
+                    EndLine = x.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
+                    Success = true
+                })
+                .OrderBy(x => x.EndLine - x.StartLine)
+                .FirstOrDefault() ?? new Result();
 
             return result;
         }
+
+        public static IEnumerable<Result> FindTypeDeclarations(string code, string userDefinedHeader = "")
+        {
+            var tree = CSharpSyntaxTree.ParseText(code);
+            var root = tree.GetRoot();
+            var nodes = root.DescendantNodes();
+
+            var result = nodes.OfType<BaseTypeDeclarationSyntax>()
+                              .Select(x => new Result
+                              {
+                                  Namespace = x.Namespace(),
+                                  ParentTypes = x.ParentTypes(),
+                                  RawTypeDefinition = x.GetText().ToString(),
+                                  TypeName = x.Identifier.ValueText,
+                                  Usings = nodes.Usings(),
+                                  CustomHeader = userDefinedHeader,
+                                  StartLine = x.StartLineIncludingComments(),
+                                  EndLine = x.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
+                                  Success = true
+                              })
+                              .OrderBy(x => x.EndLine - x.StartLine)
+                              .ToArray();
+
+            return result;
+        }
+
         public static Result FindTypeDeclarationNRefactory(string code, int fromLine, string userDefinedHeader = "")
         {
             var syntaxTree = new CSharpParser().Parse(code, "demo.cs");
@@ -251,13 +242,13 @@ namespace OlegShilo.MoveTypeToFile
                                        EndLine = x.Type.EndLocation.Line,
                                        Success = true
                                    })
-                                   .Select(x => x.EnsureCommentsIncluded(syntaxTree, code, userDefinedHeader))
+                                   // .Select(x => x.EnsureCommentsIncluded(syntaxTree, code, userDefinedHeader))
                                    .FirstOrDefault() ?? new Result();
             return result;
         }
 
         ////////////////////////////
-        public static IEnumerable<Result> FindTypeDeclarations(string code, string userDefinedHeader = "")
+        public static IEnumerable<Result> FindTypeDeclarationsNRefactory(string code, string userDefinedHeader = "")
         {
             var syntaxTree = new CSharpParser().Parse(code, "demo.cs");
 
@@ -273,7 +264,7 @@ namespace OlegShilo.MoveTypeToFile
                                        EndLine = t.EndLocation.Line,
                                        Success = true
                                    })
-                                   .Select(x => x.EnsureCommentsIncluded(syntaxTree, code))
+                                   // .Select(x => x.EnsureCommentsIncluded(syntaxTree, code))
                                    .ToArray();
             if (result.Any())
             {

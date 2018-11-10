@@ -11,6 +11,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Interop;
@@ -73,6 +74,7 @@ using System.Collections.Generic;");
 
         internal static string GetUserDefinedHeader()
         {
+            return null; // was only needed when discovering "usings" was a chellenge
             string content = "";
             content = File.ReadAllText(GetTemplateFileLocation()).Replace(TemplateFilePrompt, "").Trim();
             return content == "" ? content : content + Environment.NewLine;
@@ -143,7 +145,7 @@ using System.Collections.Generic;");
 
             foreach (var item in types)
             {
-                var drclaration = Parser.FindTypeDeclaration(code, item.StartLine, template);
+                // var drclaration = Parser.FindTypeDeclaration(code, item.StartLine, template);
                 newFile = WriteNewDefinition(item, project);
 
                 if (newFile != null)
@@ -214,8 +216,12 @@ using System.Collections.Generic;");
                 DeleteExistingDefinition(snapshot, result);
                 if (openWhenDone)
                 {
-                    //FormatActiveDocument();
                     dte.ItemOperations.OpenFile(file);
+                    Task.Run(() =>
+                    {
+                        System.Threading.Thread.Sleep(1300);
+                        FormatActiveDocument();
+                    });
                 }
             }
         }
@@ -316,7 +322,7 @@ using System.Collections.Generic;");
 
             var dialog = new ProjectSelection(Global.GetSolutionProjects());
 
-            IVsUIShell uiShell = (IVsUIShell) Global.GetService(typeof(SVsUIShell));
+            IVsUIShell uiShell = (IVsUIShell)Global.GetService(typeof(SVsUIShell));
             IntPtr mainWnd;
             uiShell.GetDialogOwnerHwnd(out mainWnd);
 
@@ -331,7 +337,7 @@ using System.Collections.Generic;");
         {
             var dialog = new TypeToMoveSelection(items);
 
-            IVsUIShell uiShell = (IVsUIShell) Global.GetService(typeof(SVsUIShell));
+            IVsUIShell uiShell = (IVsUIShell)Global.GetService(typeof(SVsUIShell));
             IntPtr mainWnd;
             uiShell.GetDialogOwnerHwnd(out mainWnd);
 
@@ -378,8 +384,10 @@ using System.Collections.Generic;");
                 Document document = IDE.ActiveDocument;
                 if (document != null)
                 {
-                    document.DTE.ExecuteCommand("Edit.FormatDocument");
-                    document.DTE.ExecuteCommand("Edit.RemoveAndSort");
+                    var dte = (DTE)Global.GetService(typeof(DTE));
+                    
+                    dte.ExecuteCommand("Edit.FormatDocument");
+                    dte.ExecuteCommand("Edit.RemoveAndSort");
                 }
             }
             catch { }

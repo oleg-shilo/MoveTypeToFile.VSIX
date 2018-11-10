@@ -77,6 +77,9 @@ namespace OlegShilo.MoveTypeToFile
                 var plugin = new VSX.MoveTypeToFile();
                 plugin.SynchActiveDocument(); //must be synch first
                 plugin.Execute();
+
+                // breaks the async formatting  in `MoveToFile.FormatActiveDocument`
+                // thus comment it out if formatting is desired.
                 plugin.SynchActiveDocument();
             }
             catch (Exception ex)
@@ -84,7 +87,7 @@ namespace OlegShilo.MoveTypeToFile
                 MessageBox.Show(ex.ToString());
             }
         }
-        
+
         private void MenuItemSelectCallback(object sender, EventArgs e)
         {
             try
