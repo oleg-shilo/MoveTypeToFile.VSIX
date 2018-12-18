@@ -30,10 +30,9 @@ namespace OlegShilo.MoveTypeToFile
             DataContext = this;
         }
 
-
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            SelectedItem = Items.Where(x=>x.Selected);
+            SelectedItem = Items.Where(x => x.Selected);
             Close();
         }
 
@@ -41,6 +40,11 @@ namespace OlegShilo.MoveTypeToFile
         {
             if (e.Key == Key.Escape)
                 Close();
+        }
+
+        private void TextBlock_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            Items.ToList().ForEach(x => x.Selected = true);
         }
     }
 }

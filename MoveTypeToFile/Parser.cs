@@ -7,6 +7,7 @@ using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using SyntaxTree = ICSharpCode.NRefactory.CSharp.SyntaxTree;
+using System.ComponentModel;
 
 namespace OlegShilo.MoveTypeToFile
 {
@@ -18,18 +19,32 @@ namespace OlegShilo.MoveTypeToFile
             public string Modifiers;
         }
 
-        public class Result
+        public class Result : INotifyPropertyChanged
         {
+            public event PropertyChangedEventHandler PropertyChanged;
+
             public bool Success { get; set; }
             public string RawTypeDefinition { get; set; }
             public IEnumerable<TypeInfo> ParentTypes { get; set; }
             public int StartLine { get; set; }
             public int EndLine { get; set; }
             public string[] Usings { get; set; }
-            public string CustomHeader{ get; set; }
+            public string CustomHeader { get; set; }
             public string TypeName { get; set; }
             public string Namespace { get; set; }
-            public bool Selected { get; set; }
+            bool selected;
+
+            public bool Selected
+            {
+                get => selected;
+
+                set
+                {
+                    selected = value;
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Selected)));
+                }
+            }
+
             public string TypeDefinition
             {
                 get
@@ -42,9 +57,9 @@ namespace OlegShilo.MoveTypeToFile
                     if (CustomHeader?.Any() == true)
                         result = string.Join("\r\n", CustomHeader) + "\r\n\r\n" + result;
                     return result;
-
                 }
             }
+
             public string DisplayName
             {
                 get
@@ -124,6 +139,7 @@ namespace OlegShilo.MoveTypeToFile
 
             return startLine - commentsLinesCount + 1; // 1-based
         }
+
         static string[] Usings(this IEnumerable<SyntaxNode> nodes)
         {
             return nodes
@@ -131,6 +147,7 @@ namespace OlegShilo.MoveTypeToFile
                 .Select(x => x.GetText().ToString().Trim())
                 .ToArray();
         }
+
         static string Namespace(this BaseTypeDeclarationSyntax declaration)
         {
             string name = null;
@@ -272,6 +289,7 @@ namespace OlegShilo.MoveTypeToFile
             }
             return new Result[0];
         }
+
         //////////////////////////////
     }
 

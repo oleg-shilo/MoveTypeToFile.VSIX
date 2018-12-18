@@ -18,10 +18,11 @@ using System.Windows.Interop;
 
 namespace OlegShilo.VSX
 {
-    internal class MoveTypeToFile
+    class MoveTypeToFile
     {
         internal static string TemplateFilePrompt = "//content of this file will be inserted at the top of the newly create .cs file";
         internal static string TemplateFileNamePattern = "MoveTypeToFile.template*.txt";
+
         internal static Lazy<string> TemplateFile = new Lazy<string>(() =>
             {
                 var asm = Assembly.GetExecutingAssembly();
@@ -66,7 +67,6 @@ using System.Collections.Generic;");
         {
             try
             {
-
                 System.Diagnostics.Process.Start("www.csscript.net/movetypetofile/release." + Assembly.GetExecutingAssembly().GetName().Version + ".html");
             }
             catch { }
@@ -125,7 +125,6 @@ using System.Collections.Generic;");
             if (!selectedTypes.Any())
                 return;
 
-
             Project[] containingProjects = GetParentProject(dte, dte.ActiveDocument.FullName);
 
             Project project;
@@ -137,7 +136,6 @@ using System.Collections.Generic;");
 
             if (project == null) //operation was canceled by the user
                 return;
-
 
             var types = selectedTypes.OrderByDescending(x => x.StartLine);
 
@@ -199,7 +197,6 @@ using System.Collections.Generic;");
             {
                 Project[] containingProjects = GetParentProject(dte, dte.ActiveDocument.FullName);
 
-
                 if (containingProjects.Length == 1)
                     project = containingProjects.First();
                 else
@@ -257,7 +254,6 @@ using System.Collections.Generic;");
                             newFileName = dialog.FileName;
                         else
                             return null; //user canceled everything
-
                     }
                 }
                 fileName = newFileName;
@@ -385,7 +381,7 @@ using System.Collections.Generic;");
                 if (document != null)
                 {
                     var dte = (DTE)Global.GetService(typeof(DTE));
-                    
+
                     dte.ExecuteCommand("Edit.FormatDocument");
                     dte.ExecuteCommand("Edit.RemoveAndSort");
                 }
