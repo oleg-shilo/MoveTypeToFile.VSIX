@@ -1,22 +1,25 @@
-﻿using Microsoft.VisualStudio.Shell;
-using Microsoft.VisualStudio.Shell.Interop;
-using OlegShilo.VSX;
-using System;
+﻿using System;
 using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Windows;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
+using OlegShilo.VSX;
+using Task = System.Threading.Tasks.Task;
 
 namespace OlegShilo.MoveTypeToFile
 {
-    [PackageRegistration(UseManagedResourcesOnly = true)]
+    // [PackageRegistration(UseManagedResourcesOnly = true)]
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(GuidList.guidMoveTypeToFilePkgString)]
-    public sealed class MoveTypeToFilePackage : Package
+    public sealed class MoveTypeToFilePackage : AsyncPackage
     {
         public MoveTypeToFilePackage()
         {
@@ -29,14 +32,20 @@ namespace OlegShilo.MoveTypeToFile
 
         #region Package Members
 
-        /// <summary>
-        /// Initialization of the package; this method is called right after the package is sited, so this is the place
-        /// where you can put all the initialization code that rely on services provided by VisualStudio.
-        /// </summary>
-        protected override void Initialize()
+        protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
+        {
+            //Global.Package = this;
+
+            // When initialized asynchronously, the current thread may be a background thread at this point.
+            // Do any initialization that requires the UI thread after switching to the UI thread.
+            await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            Register();
+        }
+
+        protected void Register()
         {
             //Debug.WriteLine(string.Format(CultureInfo.CurrentCulture, "Entering Initialize() of: {0}", this.ToString()));
-            base.Initialize();
+            // base.Initialize();
 
             // Add our command handlers for menu (commands must exist in the .vsct file)
             OleMenuCommandService mcs = GetService(typeof(IMenuCommandService)) as OleMenuCommandService;
@@ -112,27 +121,9 @@ namespace OlegShilo.MoveTypeToFile
                 // The last flag is set to true so that if the tool window does not exists it will be created.
                 //ToolWindowPane window = this.FindToolWindow(typeof(MyToolWindow), 0, true);
 
-                //if ((null == window) || (null == window.Frame))
-                //{
-                //    throw new NotSupportedException("Can not create tool window.");
-                //}
-                //IVsWindowFrame windowFrame = (IVsWindowFrame)window.Frame;
-                //Microsoft.VisualStudio.ErrorHandler.ThrowOnFailure(windowFrame.Show());
                 //---------------------------------
 
                 Process.Start(OlegShilo.VSX.MoveTypeToFile.GetTemplateFileLocation());
-
-                //var txtxMgr = (IVsTextManager)GetService(typeof(SVsTextManager));
-
-                //IVsUIShell uiShell = (IVsUIShell)GetService(typeof(SVsUIShell));
-                //IntPtr mainWnd;
-                //uiShell.GetDialogOwnerHwnd(out mainWnd);
-
-                //var dialog = new ConfigWindow();
-                //WindowInteropHelper helper = new WindowInteropHelper(dialog);
-                //helper.Owner = mainWnd;
-
-                //dialog.ShowDialog();
             }
             catch (Exception ex)
             {

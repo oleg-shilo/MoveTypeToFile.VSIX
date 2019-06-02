@@ -1,26 +1,26 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
-  <Metadata>
-    <Identity Id="VS2017.8015c581-31ee-4b02-802a-37dc73a3c7df" Version="1.4.2" Language="en-US" Publisher="Oleg Shilo" />
-    <DisplayName>Move Type To File - 2017/19</DisplayName>
-    <Description xml:space="preserve">Move class(s) to a new source file(s)</Description>
-    <MoreInfo>https://marketplace.visualstudio.com/items?itemName=OlegShilo.MoveTypeToFile</MoreInfo>
-    <License>VSIX\licence.txt</License>
-    <Icon>Resources\Package.ico</Icon>
-    <PreviewImage>preview.png</PreviewImage>
-    <Tags>refacrtoring, code,</Tags>
-  </Metadata>
-  <Installation InstalledByMsi="false">
-    <InstallationTarget Version="[15.0,17.0)" Id="Microsoft.VisualStudio.Community" />
-  </Installation>
-  <Dependencies>
-    <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="4.5" />
-  </Dependencies>
-  <Assets>
-    <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
-  </Assets>
-  <Prerequisites>
-    <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,)" DisplayName="Visual Studio core editor" />
-    <Prerequisite Id="Microsoft.VisualStudio.Component.Roslyn.LanguageServices" Version="[15.0,)" DisplayName="C# and Visual Basic" />
-  </Prerequisites>
+    <Metadata>
+        <Identity Id="VS2017.8015c581-31ee-4b02-802a-37dc73a3c7df" Version="1.4.3.0" Language="en-US" Publisher="Oleg Shilo" />
+        <DisplayName>Move Type To File - 2017/19</DisplayName>
+        <Description xml:space="preserve">Move class(s) to a new source file(s)</Description>
+        <MoreInfo>https://marketplace.visualstudio.com/items?itemName=OlegShilo.MoveTypeToFile</MoreInfo>
+        <License>VSIX\licence.txt</License>
+        <Icon>Resources\Package.ico</Icon>
+        <PreviewImage>preview.png</PreviewImage>
+        <Tags>refacrtoring, code,</Tags>
+    </Metadata>
+    <Installation InstalledByMsi="false">
+        <InstallationTarget Version="[15.0,17.0)" Id="Microsoft.VisualStudio.Community" />
+    </Installation>
+    <Dependencies>
+        <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="4.5" />
+    </Dependencies>
+    <Assets>
+        <Asset Type="Microsoft.VisualStudio.VsPackage" d:Source="Project" d:ProjectName="%CurrentProject%" Path="|%CurrentProject%;PkgdefProjectOutputGroup|" />
+    </Assets>
+    <Prerequisites>
+        <Prerequisite Id="Microsoft.VisualStudio.Component.CoreEditor" Version="[15.0,)" DisplayName="Visual Studio core editor" />
+        <Prerequisite Id="Microsoft.VisualStudio.Component.Roslyn.LanguageServices" Version="[15.0,)" DisplayName="C# and Visual Basic" />
+    </Prerequisites>
 </PackageManifest>

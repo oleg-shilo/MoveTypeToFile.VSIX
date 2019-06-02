@@ -34,18 +34,18 @@ namespace OlegShilo.MoveTypeToFile
 
             InitializeComponent();
 
-
             foreach (EnvDTE.Project item in items)
             {
                 var listItem = new ProjectItem
-                    {
-                        Project = item
-                    };
+                {
+                    Project = item
+                };
 
                 try
                 {
                     listItem.Name = Path.GetFileNameWithoutExtension(item.FullName);
-                    Items.Add(listItem);
+                    if (!string.IsNullOrEmpty(item.FullName))
+                        Items.Add(listItem);
                 }
                 catch
                 {

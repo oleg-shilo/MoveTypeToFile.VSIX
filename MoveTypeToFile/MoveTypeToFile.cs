@@ -1,9 +1,3 @@
-using EnvDTE;
-using EnvDTE80;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using OlegShilo.MoveTypeToFile;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -15,6 +9,12 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Interop;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using EnvDTE;
+using EnvDTE80;
+using OlegShilo.MoveTypeToFile;
 
 namespace OlegShilo.VSX
 {
@@ -67,7 +67,7 @@ using System.Collections.Generic;");
         {
             try
             {
-                System.Diagnostics.Process.Start("www.csscript.net/movetypetofile/release." + Assembly.GetExecutingAssembly().GetName().Version + ".html");
+                System.Diagnostics.Process.Start("https://github.com/oleg-shilo/MoveTypeToFile.VSIX/releases/tag/v" + Assembly.GetExecutingAssembly().GetName().Version);
             }
             catch { }
         }
@@ -111,9 +111,9 @@ using System.Collections.Generic;");
             //remove properly named and nested classes
 
             var rootTypes = declarations//.Where(x => !declarations.Any(y => y.StartLine < x.StartLine && y.EndLine > x.EndLine))
-                                        .Where(x => string.Compare(x.TypeName, System.IO.Path.GetFileNameWithoutExtension(file), true) != 0)
-                                        .OrderBy(x => x.StartLine)
-                                        .ToArray();
+                                          .Where(x => string.Compare(x.TypeName, System.IO.Path.GetFileNameWithoutExtension(file), true) != 0)
+                                          .OrderBy(x => x.StartLine)
+                                          .ToArray();
             if (!rootTypes.Any())
             {
                 System.Windows.MessageBox.Show("Cannot find any type definitions to extract.", "'Move Type To File' Extension");
@@ -186,7 +186,7 @@ using System.Collections.Generic;");
             if (!result.Success)
             {
                 System.Windows.MessageBox.Show("Cannot find any type definition.\nPlease ensure that the document has no errors and the cursor is placed inside of the type definition.",
-                   "'Move Type To File' Extension");
+                    "'Move Type To File' Extension");
                 return;
             }
 
