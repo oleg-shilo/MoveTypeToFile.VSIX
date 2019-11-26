@@ -19,7 +19,7 @@ namespace OlegShilo.MoveTypeToFile
     [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)]
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(GuidList.guidMoveTypeToFilePkgString)]
-    public sealed class MoveTypeToFilePackage : AsyncPackage
+    public class MoveTypeToFilePackage : AsyncPackage
     {
         public MoveTypeToFilePackage()
         {

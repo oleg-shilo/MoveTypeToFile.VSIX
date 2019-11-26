@@ -74,10 +74,10 @@ using System.Collections.Generic;");
 
         internal static string GetUserDefinedHeader()
         {
-            return null; // was only needed when discovering "usings" was a chellenge
-            string content = "";
-            content = File.ReadAllText(GetTemplateFileLocation()).Replace(TemplateFilePrompt, "").Trim();
-            return content == "" ? content : content + Environment.NewLine;
+            return null; // was only needed when discovering "usings" was a challenge
+            // string content = "";
+            // content = File.ReadAllText(GetTemplateFileLocation()).Replace(TemplateFilePrompt, "").Trim();
+            // return content == "" ? content : content + Environment.NewLine;
         }
 
         public void Execute()
@@ -179,7 +179,7 @@ using System.Collections.Generic;");
 
             string header = GetUserDefinedHeader();
 
-            caretLineNumber = caretLineNumber + 1; //parser is 1-based
+            // caretLineNumber = caretLineNumber + 1; // NRefactory parser is 1-based
             // Parser.Result result = Parser.FindTypeDeclarationNRefactory(code, caretLineNumber, header);
             Parser.Result result = Parser.FindTypeDeclaration(code, caretLineNumber, header);
 

@@ -1,13 +1,14 @@
-using ICSharpCode.NRefactory.CSharp;
-using Microsoft.CodeAnalysis.CSharp;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using SyntaxTree = ICSharpCode.NRefactory.CSharp.SyntaxTree;
-using System.ComponentModel;
+
+// using ICSharpCode.NRefactory.CSharp;
+// using SyntaxTree = ICSharpCode.NRefactory.CSharp.SyntaxTree;
 
 namespace OlegShilo.MoveTypeToFile
 {
@@ -113,21 +114,6 @@ namespace OlegShilo.MoveTypeToFile
             }
         }
 
-        static bool IsDefaultUsingsStyle(SyntaxTree syntaxTree)
-        {
-            var firstNamespace = syntaxTree.Children.DeepAll(x => x is NamespaceDeclaration)
-                                                    .Cast<NamespaceDeclaration>()
-                                                    .FirstOrDefault();
-
-            if (firstNamespace != null)
-            {
-                return !syntaxTree.Children.DeepAll(x => x is UsingDeclaration)
-                                           .Where(x => x.StartLocation.Line > firstNamespace.StartLocation.Line)
-                                           .Any();
-            }
-            return true;
-        }
-
         static int StartLineIncludingComments(this BaseTypeDeclarationSyntax declaration)
         {
             var startLine = declaration.GetLocation().GetLineSpan().StartLinePosition.Line;
@@ -137,7 +123,7 @@ namespace OlegShilo.MoveTypeToFile
             // -1 to exclude the current line
             var commentsLinesCount = typeWithComments.Substring(0, typeWithComments.IndexOf(typeWithoutComments)).Split('\n').Count() - 1;
 
-            return startLine - commentsLinesCount + 1; // 1-based
+            return startLine - commentsLinesCount;
         }
 
         static string[] Usings(this IEnumerable<SyntaxNode> nodes)
@@ -205,7 +191,7 @@ namespace OlegShilo.MoveTypeToFile
                     TypeName = x.Identifier.ValueText,
                     Usings = nodes.Usings(),
                     CustomHeader = userDefinedHeader,
-                    StartLine = x.StartLineIncludingComments(),
+                    StartLine = x.StartLineIncludingComments() + 1,
                     EndLine = x.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
                     Success = true
                 })
@@ -230,7 +216,7 @@ namespace OlegShilo.MoveTypeToFile
                                   TypeName = x.Identifier.ValueText,
                                   Usings = nodes.Usings(),
                                   CustomHeader = userDefinedHeader,
-                                  StartLine = x.StartLineIncludingComments(),
+                                  StartLine = x.StartLineIncludingComments() + 1,
                                   EndLine = x.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
                                   Success = true
                               })
@@ -239,58 +225,6 @@ namespace OlegShilo.MoveTypeToFile
 
             return result;
         }
-
-        public static Result FindTypeDeclarationNRefactory(string code, int fromLine, string userDefinedHeader = "")
-        {
-            var syntaxTree = new CSharpParser().Parse(code, "demo.cs");
-
-            var result = syntaxTree.Children
-                                   .DeepAll(x => x.NodeType == NodeType.TypeDeclaration)
-                                   .OfType<EntityDeclaration>()
-                                   .Where(t => t.StartLocation.Line <= fromLine && t.EndLocation.Line >= fromLine) //inside of the type declaration
-                                   .Select(t => new { Type = t, Size = t.EndLocation.Line - t.StartLocation.Line })
-                                   .OrderBy(x => x.Size)
-                                   .Select(x => new Result
-                                   {
-                                       Namespace = x.Type.GetNamespace(),
-                                       ParentTypes = x.Type.GetParentTypes(),
-                                       TypeName = x.Type.Name,
-                                       StartLine = x.Type.StartLocation.Line,
-                                       EndLine = x.Type.EndLocation.Line,
-                                       Success = true
-                                   })
-                                   // .Select(x => x.EnsureCommentsIncluded(syntaxTree, code, userDefinedHeader))
-                                   .FirstOrDefault() ?? new Result();
-            return result;
-        }
-
-        ////////////////////////////
-        public static IEnumerable<Result> FindTypeDeclarationsNRefactory(string code, string userDefinedHeader = "")
-        {
-            var syntaxTree = new CSharpParser().Parse(code, "demo.cs");
-
-            var result = syntaxTree.Children
-                                   .DeepAll(x => x.NodeType == NodeType.TypeDeclaration)
-                                   .OfType<EntityDeclaration>()
-                                   .Select(t => new Result
-                                   {
-                                       Namespace = t.GetNamespace(),
-                                       ParentTypes = t.GetParentTypes(),
-                                       TypeName = t.Name,
-                                       StartLine = t.StartLocation.Line,
-                                       EndLine = t.EndLocation.Line,
-                                       Success = true
-                                   })
-                                   // .Select(x => x.EnsureCommentsIncluded(syntaxTree, code))
-                                   .ToArray();
-            if (result.Any())
-            {
-                return result;
-            }
-            return new Result[0];
-        }
-
-        //////////////////////////////
     }
 
     public static class Extensions
@@ -303,64 +237,6 @@ namespace OlegShilo.MoveTypeToFile
         public static string[] GetLines(this string text)
         {
             return text.Replace(Environment.NewLine, "\n").Split('\n');
-        }
-
-        public static string GetNamespace(this EntityDeclaration node)
-        {
-            string result = "";
-
-            var parent = node.Parent;
-            while (parent != null)
-            {
-                if (parent is NamespaceDeclaration)
-                {
-                    if (result.HasText())
-                        result += ".";
-                    result += (parent as NamespaceDeclaration).Name;
-                }
-                parent = parent.Parent;
-            }
-
-            return result;
-        }
-
-        public static List<Parser.TypeInfo> GetParentTypes(this EntityDeclaration node)
-        {
-            var result = new List<Parser.TypeInfo>();
-
-            var parent = node.Parent as TypeDeclaration;
-            while (parent != null)
-            {
-                result.Insert(0, new Parser.TypeInfo
-                {
-                    Name = parent.Name,
-                    Modifiers = parent.Modifiers.ToString().ToLower().Replace(", ", " ") //"Partial, Public"
-                });
-                parent = parent.Parent as TypeDeclaration;
-            }
-
-            return result;
-        }
-
-        public static IEnumerable<AstNode> DeepAll(this IEnumerable<AstNode> collection, Func<AstNode, bool> selector)
-        {
-            //pseudo recursion
-            var result = new List<AstNode>();
-            var queue = new Queue<AstNode>(collection);
-
-            while (queue.Count > 0)
-            {
-                AstNode node = queue.Dequeue();
-                if (selector(node))
-                    result.Add(node);
-
-                foreach (var subNode in node.Children)
-                {
-                    queue.Enqueue(subNode);
-                }
-            }
-
-            return result;
         }
     }
 }
