@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.24720.0
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoveTypeToFile", "MoveTypeToFile\MoveTypeToFile.csproj", "{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MoveTypeToFile", "MoveTypeToFile\MoveTypeToFile.csproj", "{CDC5EF4A-EF24-4212-ADF9-164CCC8934A6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,12 +11,15 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{07E9D4E7-1FE5-4FE7-A444-5D7A0C2A510C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CDC5EF4A-EF24-4212-ADF9-164CCC8934A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CDC5EF4A-EF24-4212-ADF9-164CCC8934A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CDC5EF4A-EF24-4212-ADF9-164CCC8934A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CDC5EF4A-EF24-4212-ADF9-164CCC8934A6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C1D27A58-737E-4A19-A9E8-255D544AFE73}
 	EndGlobalSection
 EndGlobal
