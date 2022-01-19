@@ -87,7 +87,7 @@
     <AppDesigner Include="Properties\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\MoveTypeToFile\MoveTypeToFile.2013.csproj">
+    <ProjectReference Include="..\_MoveTypeToFile\MoveTypeToFile.csproj">
       <Project>{07e9d4e7-1fe5-4fe7-a444-5d7a0c2a510c}</Project>
       <Name>MoveTypeToFile.2013</Name>
     </ProjectReference>
