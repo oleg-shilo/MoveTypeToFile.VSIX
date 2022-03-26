@@ -25,6 +25,7 @@ namespace OlegShilo.MoveTypeToFile
 
         public TypeToMoveSelection(IEnumerable<Parser.Result> items)
         {
+            this.MaxHeight = System.Windows.Forms.Screen.PrimaryScreen.Bounds.Height / 2;
             Items = items;
             InitializeComponent();
             DataContext = this;

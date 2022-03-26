@@ -114,6 +114,7 @@ using System.Collections.Generic;");
                                           .Where(x => string.Compare(x.TypeName, System.IO.Path.GetFileNameWithoutExtension(file), true) != 0)
                                           .OrderBy(x => x.StartLine)
                                           .ToArray();
+
             if (!rootTypes.Any())
             {
                 System.Windows.MessageBox.Show("Cannot find any type definitions to extract.", "'Move Type To File' Extension");

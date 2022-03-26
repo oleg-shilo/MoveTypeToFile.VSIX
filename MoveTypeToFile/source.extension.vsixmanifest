@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="VS2017.8015c581-31ee-4b02-802a-37dc73a3c7df" Version="1.4.5.0" Language="en-US" Publisher="Oleg Shilo" />
-        <DisplayName>Move Type To File - 2019/22</DisplayName>
+        <Identity Id="VS2017.8015c581-31ee-4b02-802a-37dc73a3c7df" Version="1.4.6.0" Language="en-US" Publisher="Oleg Shilo" />
+        <DisplayName>Move Type To File - 2022</DisplayName>
         <Description xml:space="preserve">Move class(s) to a new source file(s)</Description>
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=OlegShilo.MoveTypeToFile</MoreInfo>
         <License>licence.txt</License>
@@ -11,7 +11,7 @@
         <Tags>refacrtoring, code,</Tags>
     </Metadata>
     <Installation>
-        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0, 18.0)">
+        <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)">
             <ProductArchitecture>amd64</ProductArchitecture>
         </InstallationTarget>
     </Installation>
