@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 
 // using ICSharpCode.NRefactory.CSharp;
 // using SyntaxTree = ICSharpCode.NRefactory.CSharp.SyntaxTree;
@@ -52,7 +53,7 @@ namespace OlegShilo.MoveTypeToFile
                 {
                     var result = RawTypeDefinition.Trim();
                     if (Namespace.HasText())
-                        result = "namespace " + Namespace + "\r\n{\r\n" + result + "\r\n}";
+                        result = "namespace " + Namespace + "\r\n{\r\n    " + result + "\r\n}";
                     if (Usings?.Any() == true)
                         result = string.Join("\r\n", Usings) + "\r\n\r\n" + result;
                     if (CustomHeader?.Any() == true)
@@ -173,7 +174,7 @@ namespace OlegShilo.MoveTypeToFile
             return name;
         }
 
-        public static Result FindTypeDeclaration(string code, int fromLine, string userDefinedHeader = "")
+        public static Result FindTypeDeclaration(string code, int fromLine)
         {
             var tree = CSharpSyntaxTree.ParseText(code);
             var fromLineSpan = tree.GetText().Lines[fromLine].Span;
@@ -190,7 +191,7 @@ namespace OlegShilo.MoveTypeToFile
                     RawTypeDefinition = x.GetText().ToString(),
                     TypeName = x.Identifier.ValueText,
                     Usings = nodes.Usings(),
-                    CustomHeader = userDefinedHeader,
+                    CustomHeader = "",
                     StartLine = x.StartLineIncludingComments() + 1,
                     EndLine = x.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
                     Success = true
@@ -237,6 +238,16 @@ namespace OlegShilo.MoveTypeToFile
         public static string[] GetLines(this string text)
         {
             return text.Replace(Environment.NewLine, "\n").Split('\n');
+        }
+
+        public static string ToJson(this object obj)
+        {
+            return JsonSerializer.Serialize(obj);
+        }
+
+        public static T FromJson<T>(this string json)
+        {
+            return JsonSerializer.Deserialize<T>(json);
         }
     }
 }

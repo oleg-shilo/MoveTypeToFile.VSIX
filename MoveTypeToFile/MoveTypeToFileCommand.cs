@@ -133,7 +133,7 @@ namespace MoveTypeToFile
 
                 //---------------------------------
 
-                Process.Start(OlegShilo.VSX.MoveTypeToFile.GetTemplateFileLocation());
+                Process.Start(OlegShilo.VSX.MoveTypeToFile.ConfigFile.Value);
             }
             catch (Exception ex)
             {
