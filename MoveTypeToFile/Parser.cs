@@ -1,11 +1,12 @@
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text;
-using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using System.Text.Json;
 
 // using ICSharpCode.NRefactory.CSharp;
 // using SyntaxTree = ICSharpCode.NRefactory.CSharp.SyntaxTree;
@@ -52,11 +53,23 @@ namespace OlegShilo.MoveTypeToFile
                 {
                     var result = RawTypeDefinition.Trim();
                     if (Namespace.HasText())
-                        result = "namespace " + Namespace + "\r\n{\r\n" + result + "\r\n}";
+                    {
+                        if (Namespace.EndsWith(";"))
+                            result = "namespace " + Namespace + "\r\n    " + result;
+                        else
+                            result = "namespace " + Namespace + "\r\n{\r\n    " + result + "\r\n}";
+                    }
+
                     if (Usings?.Any() == true)
+                    {
                         result = string.Join("\r\n", Usings) + "\r\n\r\n" + result;
+                    }
+
                     if (CustomHeader?.Any() == true)
+                    {
                         result = string.Join("\r\n", CustomHeader) + "\r\n\r\n" + result;
+                    }
+
                     return result;
                 }
             }
@@ -139,18 +152,31 @@ namespace OlegShilo.MoveTypeToFile
             string name = null;
 
             var node = declaration.Parent;
+            bool faleScopePreferred = false;
             do
             {
-                if (node is NamespaceDeclarationSyntax nm)
+                faleScopePreferred = faleScopePreferred || (node is FileScopedNamespaceDeclarationSyntax);
+
+                string parentName =
+                    (node as NamespaceDeclarationSyntax)?.Name.ToFullString().Trim() ??
+                    (node as FileScopedNamespaceDeclarationSyntax)?.Name.ToFullString().Trim();
+
+                if (parentName.HasText())
+                {
                     if (name == null)
-                        name = nm.Name.ToFullString().Trim();
+                        name = parentName;
                     else
-                        name = nm.Name.ToFullString().Trim() + "." + name;
+                        name = parentName + "." + name;
+                }
 
                 node = node?.Parent;
             }
             while (node != null);
-            return name;
+
+            if (name.HasText() && faleScopePreferred)
+                return name + ";";
+            else
+                return name;
         }
 
         static List<TypeInfo> ParentTypes(this BaseTypeDeclarationSyntax declaration)
@@ -173,7 +199,7 @@ namespace OlegShilo.MoveTypeToFile
             return name;
         }
 
-        public static Result FindTypeDeclaration(string code, int fromLine, string userDefinedHeader = "")
+        public static Result FindTypeDeclaration(string code, int fromLine)
         {
             var tree = CSharpSyntaxTree.ParseText(code);
             var fromLineSpan = tree.GetText().Lines[fromLine].Span;
@@ -190,7 +216,7 @@ namespace OlegShilo.MoveTypeToFile
                     RawTypeDefinition = x.GetText().ToString(),
                     TypeName = x.Identifier.ValueText,
                     Usings = nodes.Usings(),
-                    CustomHeader = userDefinedHeader,
+                    CustomHeader = "",
                     StartLine = x.StartLineIncludingComments() + 1,
                     EndLine = x.GetLocation().GetLineSpan().EndLinePosition.Line + 1,
                     Success = true
@@ -229,6 +255,8 @@ namespace OlegShilo.MoveTypeToFile
 
     public static class Extensions
     {
+        // public static T As<T>(this object obj) => obj as T;
+
         public static bool HasText(this string text)
         {
             return !string.IsNullOrEmpty(text);
@@ -237,6 +265,16 @@ namespace OlegShilo.MoveTypeToFile
         public static string[] GetLines(this string text)
         {
             return text.Replace(Environment.NewLine, "\n").Split('\n');
+        }
+
+        public static string ToJson(this object obj)
+        {
+            return JsonSerializer.Serialize(obj);
+        }
+
+        public static T FromJson<T>(this string json)
+        {
+            return JsonSerializer.Deserialize<T>(json);
         }
     }
 }

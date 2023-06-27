@@ -1,3 +1,9 @@
+using EnvDTE;
+using EnvDTE80;
+using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Text;
+using Microsoft.VisualStudio.Text.Editor;
+using OlegShilo.MoveTypeToFile;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,76 +15,37 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Forms;
 using System.Windows.Interop;
-using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.VisualStudio.Text;
-using Microsoft.VisualStudio.Text.Editor;
-using EnvDTE;
-using EnvDTE80;
-using OlegShilo.MoveTypeToFile;
 
 namespace OlegShilo.VSX
 {
+    public class Config
+    {
+        public bool ShowFormattingWarning { get; set; } = true;
+
+        public void Save()
+            => File.WriteAllText(MoveTypeToFile.ConfigFile.Value, this.ToJson());
+
+        public static Config Load()
+             => File.ReadAllText(MoveTypeToFile.ConfigFile.Value).FromJson<Config>();
+    }
+
     class MoveTypeToFile
     {
-        internal static string TemplateFilePrompt = "//content of this file will be inserted at the top of the newly create .cs file";
-        internal static string TemplateFileNamePattern = "MoveTypeToFile.template*.txt";
-
-        internal static Lazy<string> TemplateFile = new Lazy<string>(() =>
+        internal static Lazy<string> ConfigFile = new Lazy<string>(() =>
             {
-                var asm = Assembly.GetExecutingAssembly();
-                return asm.Location
-                          .ParentDir()
-                          .ParentDir()
-                          .PathCombine(TemplateFileNamePattern.Replace("*", "." + asm.GetName().Version));
+                var file = Assembly.GetExecutingAssembly()
+                             .Location
+                             .ParentDir()
+                             .ParentDir()
+                             .PathCombine("MoveTypeToFile.config.txt");
+
+                if (!File.Exists(file))
+                {
+                    File.WriteAllText(file, new Config().ToJson());
+                }
+
+                return file;
             });
-
-        internal static string GetTemplateFileLocation()
-        {
-            if (!File.Exists(TemplateFile.Value))
-            {
-                var oldTemplates = Directory.GetFiles(Path.GetDirectoryName(TemplateFile.Value), TemplateFileNamePattern);
-                if (oldTemplates.Any())
-                {
-                    File.Copy(oldTemplates.First(), TemplateFile.Value, true);
-                    foreach (var item in oldTemplates)
-                        try
-                        {
-                            File.Delete(item);
-                        }
-                        catch
-                        {
-                        }
-                }
-                else
-                {
-                    File.WriteAllText(TemplateFile.Value, TemplateFilePrompt + @"
-using System;
-using System.Linq;
-using System.Collections.Generic;");
-                }
-
-                ShowReleaseNotes();
-            }
-
-            return TemplateFile.Value;
-        }
-
-        static void ShowReleaseNotes()
-        {
-            try
-            {
-                System.Diagnostics.Process.Start("https://github.com/oleg-shilo/MoveTypeToFile.VSIX/releases/tag/v" + Assembly.GetExecutingAssembly().GetName().Version);
-            }
-            catch { }
-        }
-
-        internal static string GetUserDefinedHeader()
-        {
-            return null; // was only needed when discovering "usings" was a challenge
-            // string content = "";
-            // content = File.ReadAllText(GetTemplateFileLocation()).Replace(TemplateFilePrompt, "").Trim();
-            // return content == "" ? content : content + Environment.NewLine;
-        }
 
         public void Execute()
         {
@@ -101,8 +68,6 @@ using System.Collections.Generic;");
 
             string code = snapshot.GetText();
 
-            string template = GetUserDefinedHeader();
-
             DTE2 dte = Global.GetDTE2();
 
             string file = dte.ActiveDocument.FullName;
@@ -110,10 +75,9 @@ using System.Collections.Generic;");
 
             //remove properly named and nested classes
 
-            var rootTypes = declarations//.Where(x => !declarations.Any(y => y.StartLine < x.StartLine && y.EndLine > x.EndLine))
-                                          .Where(x => string.Compare(x.TypeName, System.IO.Path.GetFileNameWithoutExtension(file), true) != 0)
-                                          .OrderBy(x => x.StartLine)
-                                          .ToArray();
+            var rootTypes = declarations.Where(x => string.Compare(x.TypeName, System.IO.Path.GetFileNameWithoutExtension(file), true) != 0)
+                                        .OrderBy(x => x.StartLine)
+                                        .ToArray();
 
             if (!rootTypes.Any())
             {
@@ -142,21 +106,49 @@ using System.Collections.Generic;");
 
             string newFile = null;
 
-            foreach (var item in types)
+            var newFiles = new List<string>();
+
+            var dialog = new ProgressDialog();
+            dialog.Run = () =>
+                        {
+                            int i = 0;
+                            foreach (var item in types)
+                            {
+                                newFile = WriteNewDefinition(item, project);
+                                newFiles.Add(newFile);
+
+                                if (newFile != null)
+                                    dialog.Dispatcher.Invoke(() =>
+                                        DeleteExistingDefinition(snapshot, item, deleteSeparationLines: false));
+                                else
+                                    break;
+
+                                dialog.OnProgress(++i, types.Count(), Path.GetFileName(newFile));
+                            }
+
+                            dialog.Dispatcher.Invoke(dialog.Close);
+                        };
+
+            ShowDialog(dialog);
+
+            if (Config.Load().ShowFormattingWarning)
+                new MsgBox().ShowDialog();
+
+            if (newFiles.Count() == 1)
             {
-                // var drclaration = Parser.FindTypeDeclaration(code, item.StartLine, template);
-                newFile = WriteNewDefinition(item, project);
-
-                if (newFile != null)
-                {
-                    DeleteExistingDefinition(snapshot, item);
-                }
-                else
-                    break;
-            }
-
-            if (newFile != null)
                 dte.ItemOperations.OpenFile(newFile);
+                var IDE = Global.GetDTE2();
+
+                foreach (var item in newFiles)
+                {
+                    Document document = IDE.ActiveDocument;
+                    while (document == null || document.FullName != newFile)
+                    {
+                        System.Threading.Thread.Sleep(200);
+                    }
+                    FormatActiveDocument();
+                }
+            }
         }
 
         public void ExecuteSingle(int line = -1, Project destProject = null, bool openWhenDone = true)
@@ -178,11 +170,7 @@ using System.Collections.Generic;");
 
             string code = snapshot.GetText();
 
-            string header = GetUserDefinedHeader();
-
-            // caretLineNumber = caretLineNumber + 1; // NRefactory parser is 1-based
-            // Parser.Result result = Parser.FindTypeDeclarationNRefactory(code, caretLineNumber, header);
-            Parser.Result result = Parser.FindTypeDeclaration(code, caretLineNumber, header);
+            Parser.Result result = Parser.FindTypeDeclaration(code, caretLineNumber);
 
             if (!result.Success)
             {
@@ -267,7 +255,7 @@ using System.Collections.Generic;");
             return fileName;
         }
 
-        static void DeleteExistingDefinition(ITextSnapshot snapshot, Parser.Result result)
+        static void DeleteExistingDefinition(ITextSnapshot snapshot, Parser.Result result, bool deleteSeparationLines = true)
         {
             DTE2 dte = Global.GetDTE2();
             ITextEdit edit = snapshot.TextBuffer.CreateEdit();
@@ -277,16 +265,19 @@ using System.Collections.Generic;");
                 for (int i = result.StartLine - 1; i <= result.EndLine - 1; i++)
                 {
                     currentLine = snapshot.GetLineFromLineNumber(i);
+                    var lineText = currentLine.GetText();
                     edit.Delete(currentLine.Start.Position, currentLine.LengthIncludingLineBreak);
                 }
 
                 //remove separating empty line if found
-                if (snapshot.LineCount > result.EndLine)
-                {
-                    currentLine = snapshot.GetLineFromLineNumber(result.EndLine);
-                    if (string.IsNullOrWhiteSpace(currentLine.GetText()))
-                        edit.Delete(currentLine.Start.Position, currentLine.LengthIncludingLineBreak);
-                }
+                if (deleteSeparationLines)
+                    if (snapshot.LineCount > result.EndLine)
+                    {
+                        currentLine = snapshot.GetLineFromLineNumber(result.EndLine);
+                        var lineText = currentLine.GetText();
+                        if (string.IsNullOrWhiteSpace(currentLine.GetText()))
+                            edit.Delete(currentLine.Start.Position, currentLine.LengthIncludingLineBreak);
+                    }
 
                 edit.Apply();
             }
@@ -343,6 +334,17 @@ using System.Collections.Generic;");
             dialog.ShowDialog();
 
             return dialog.SelectedItem;
+        }
+
+        public static void ShowDialog(System.Windows.Window dialog)
+        {
+            IVsUIShell uiShell = (IVsUIShell)Global.GetService(typeof(SVsUIShell));
+            IntPtr mainWnd;
+            uiShell.GetDialogOwnerHwnd(out mainWnd);
+
+            var helper = new WindowInteropHelper(dialog);
+            helper.Owner = mainWnd;
+            dialog.ShowDialog();
         }
 
         /// <summary>

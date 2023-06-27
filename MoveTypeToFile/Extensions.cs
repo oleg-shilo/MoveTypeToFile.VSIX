@@ -93,8 +93,9 @@ namespace OlegShilo.VSX
                     }
                     catch { }
 
-                    foreach (ProjectItem item in projectItem.ProjectItems)
-                        projectList.Add(item);
+                    if (projectItem.ProjectItems != null)
+                        foreach (ProjectItem item in projectItem.ProjectItems)
+                            projectList.Add(item);
 
                     iterator++;
                 }
