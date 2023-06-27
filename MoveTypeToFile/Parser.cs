@@ -53,11 +53,23 @@ namespace OlegShilo.MoveTypeToFile
                 {
                     var result = RawTypeDefinition.Trim();
                     if (Namespace.HasText())
-                        result = "namespace " + Namespace + "\r\n{\r\n    " + result + "\r\n}";
+                    {
+                        if (Namespace.EndsWith(";"))
+                            result = "namespace " + Namespace + "\r\n    " + result;
+                        else
+                            result = "namespace " + Namespace + "\r\n{\r\n    " + result + "\r\n}";
+                    }
+
                     if (Usings?.Any() == true)
+                    {
                         result = string.Join("\r\n", Usings) + "\r\n\r\n" + result;
+                    }
+
                     if (CustomHeader?.Any() == true)
+                    {
                         result = string.Join("\r\n", CustomHeader) + "\r\n\r\n" + result;
+                    }
+
                     return result;
                 }
             }
@@ -140,18 +152,31 @@ namespace OlegShilo.MoveTypeToFile
             string name = null;
 
             var node = declaration.Parent;
+            bool faleScopePreferred = false;
             do
             {
-                if (node is NamespaceDeclarationSyntax nm)
+                faleScopePreferred = faleScopePreferred || (node is FileScopedNamespaceDeclarationSyntax);
+
+                string parentName =
+                    (node as NamespaceDeclarationSyntax)?.Name.ToFullString().Trim() ??
+                    (node as FileScopedNamespaceDeclarationSyntax)?.Name.ToFullString().Trim();
+
+                if (parentName.HasText())
+                {
                     if (name == null)
-                        name = nm.Name.ToFullString().Trim();
+                        name = parentName;
                     else
-                        name = nm.Name.ToFullString().Trim() + "." + name;
+                        name = parentName + "." + name;
+                }
 
                 node = node?.Parent;
             }
             while (node != null);
-            return name;
+
+            if (name.HasText() && faleScopePreferred)
+                return name + ";";
+            else
+                return name;
         }
 
         static List<TypeInfo> ParentTypes(this BaseTypeDeclarationSyntax declaration)
@@ -230,6 +255,8 @@ namespace OlegShilo.MoveTypeToFile
 
     public static class Extensions
     {
+        // public static T As<T>(this object obj) => obj as T;
+
         public static bool HasText(this string text)
         {
             return !string.IsNullOrEmpty(text);
