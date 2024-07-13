@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="VS2017.8015c581-31ee-4b02-802a-37dc73a3c7df" Version="1.4.7.0" Language="en-US" Publisher="Oleg Shilo" />
+        <Identity Id="VS2017.8015c581-31ee-4b02-802a-37dc73a3c7df" Version="1.4.8.0" Language="en-US" Publisher="Oleg Shilo" />
         <DisplayName>Move Type To File - VS2022</DisplayName>
         <Description xml:space="preserve">Move class(s) to a new source file(s)</Description>
         <MoreInfo>https://marketplace.visualstudio.com/items?itemName=OlegShilo.MoveTypeToFile</MoreInfo>
